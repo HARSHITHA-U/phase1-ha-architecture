@@ -1,0 +1,15 @@
+# Terraform state: contains resource details, never commit
+*.tfstate
+*.tfstate.*
+
+# Local provider plugins and cache
+.terraform/
+
+# Variable files can hold secrets
+*.tfvars
+
+# Crash logs
+crash.log
+
+# macOS
+.DS_Store
