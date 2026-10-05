@@ -7,7 +7,7 @@ This is Phase 1 of a 4-phase plan. Phase 2 covers Kubernetes multi-tenancy, Phas
 ## Architecture
 
 
-     ![Phase 1 architecture](docs/architecture.svg)
+     ![Phase 1 architecture](docs/phase1_full_architecture.svg)
 
 
 Two independent lifecycles run through this design:
@@ -34,12 +34,11 @@ Two independent lifecycles run through this design:
 
 **Verified so far**
 - `terraform apply` completes cleanly and both instances reach `healthy` in the target group
-
-**Not yet done — planned for the next session**
 - Confirming the load-balancing behavior itself (alternating hostnames on refresh, direct instance access blocked)
 - Self-healing test: manually terminating an instance and timing the ASG's replacement
 - A deliberate break: removing the ALB→instance security group rule by hand and catching the drift with `terraform plan`
 - Scale-out test: driving CPU up via a `/cgi-bin/burn` endpoint and watching the CloudWatch alarm and ASG activity
+**Not yet done — planned for the next session**
 - Kubernetes-side parallel: an HPA on an existing Deployment, as the direct comparison to this phase's target-tracking policy
 
 ## Repository structure
