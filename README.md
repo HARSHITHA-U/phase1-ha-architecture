@@ -7,7 +7,7 @@ This is Phase 1 of a 4-phase plan. Phase 2 covers Kubernetes multi-tenancy, Phas
 ## Architecture
 
 
-     ![Phase 1 architecture](docs/phase1_full_architecture.svg)
+     ![Phase 1 architecture](https://raw.githubusercontent.com/HARSHITHA-U/phase1-ha-architecture/main/docs/phase1_full_architecture.svg)
 
 
 Two independent lifecycles run through this design:
