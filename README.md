@@ -68,7 +68,7 @@ terraform plan     # check state vs. reality before applying — a partial/inter
 terraform apply
 ```
 
-Cost while running: a NAT Gateway (~$0.045/hr), the ALB (~$0.02/hr + usage), and two `t3.micro` instances, together roughly $0.10–0.12/hr. Check current AWS pricing for your region.
+Cost while running: a NAT Gateway ($0.045/hr), the ALB ($0.02/hr + usage), and two `t3.micro` instances, together roughly $0.10–0.12/hr. Check current AWS pricing for your region.
 
 ```bash
 terraform destroy  # run at the end of every session
