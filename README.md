@@ -6,9 +6,9 @@ This is Phase 1 of a 4-phase plan. Phase 2 covers Kubernetes multi-tenancy, Phas
 
 ## Architecture
 
-```
+
      ![Phase 1 architecture](docs/architecture.svg)
-```
+
 
 Two independent lifecycles run through this design:
 
@@ -64,8 +64,8 @@ Two independent lifecycles run through this design:
 cd terraform
 terraform init
 terraform plan     # check state vs. reality before applying — a partial/interrupted
-                    # apply can leave orphaned resources Terraform doesn't know about
-terraform apply
+terraform apply    # apply can leave orphaned resources Terraform doesn't know about
+
 ```
 
 Cost while running: a NAT Gateway (~$0.045/hr), the ALB (~$0.02/hr + usage), and two `t3.micro` instances, together roughly $0.10–0.12/hr. Check current AWS pricing for your region.
@@ -76,13 +76,13 @@ terraform destroy  # run at the end of every session
 
 ## Notes from building this
 
-- A destroyed environment's state means the next `terraform plan` should show every resource as "to add" — if it instead shows "no changes," the previous destroy never actually ran, and the NAT Gateway has likely been billing since.
-- `filebase64()` fails at plan time, before anything touches AWS, if the referenced file doesn't exist or is misnamed — caught an early typo (`user` instead of `user_data.sh`) this way with zero cost impact.
-- `terraform apply` can fail partway through with `AccessDenied` after already creating some resources (the network layer succeeded before the ELB actions were denied) — Terraform doesn't roll back on this kind of failure, so already-created resources keep billing until the permission is fixed and `apply` is re-run.
-- Rather than widen the existing devops-journey IAM policy, a new policy was created and attached separately for this phase's ELB/ASG/CloudWatch-alarm permissions — keeps the working policy from the first project untouched and makes clear what each phase actually needed.
-- ALB target group health checks and ASG health check type are two different settings: the target group defines *how* a health check works (path, thresholds, interval), while the ASG's `health_check_type` decides whether the ASG trusts that check (`ELB`) or only whether the EC2 instance itself is running (`EC2`) when deciding to replace an instance.
-- One route table can be (and here, is) shared by multiple subnets with identical routing needs — a second identical table would just be a copy to maintain. Per-subnet route tables become necessary once subnets need genuinely different routing, e.g. one NAT Gateway per AZ in a fully HA design.
-- The single NAT Gateway is a known, accepted single point of failure for this build: if `us-east-1a` goes down, the private subnet in `us-east-1b` loses outbound internet even though its own EC2 instance is unaffected. A per-AZ NAT would remove this but doubles NAT cost.
+## Notes from building this
+
+- **Self-heal:** manually terminated an instance. ASG detected it and launched a replacement with no manual action. Measured ~6 of 11 sampled requests failing (502/connection errors) during the ~10-15s failover window before traffic fully shifted to the surviving instance.
+- **Drift:** removed the ALB→instance security group rule by hand. All requests timed out (no 504, no fallback) — confirms the ALB does not fail open to unhealthy targets. `terraform plan` caught the drift (1 to change) and `apply` restored it; traffic recovered within ~30-45s, matching the target group's own health-check interval rather than being instant.
+- **Scale-out:** drove CPU above 50% on both instances via a load-test endpoint. CloudWatch alarm fired after ~3-4 min, ASG scaled straight to max_size (4) rather than incrementally, consistent with target-tracking's proportional scaling math when CPU is well above target.
+- **IAM:** the Terraform user's existing least-privilege policy had no ELB/ASG permissions. Rather than widen it, added a separate scoped policy (`iam/phase1-alb-asg-policy.json`) just for this phase.
+- **Partial apply:** an `AccessDenied` mid-apply left the network layer (including the NAT Gateway) created and billing before Terraform stopped — a reminder that Terraform doesn't roll back on failure.
 
 ## Roadmap
 
@@ -91,8 +91,8 @@ terraform destroy  # run at the end of every session
 - [x] Launch Template, Target Group, ALB + listener
 - [x] Auto Scaling Group with ELB health checks
 - [x] Target-tracking scaling policy (CPU 50%)
-- [ ] Verified load-balancing behavior (hostname alternation, direct-access block)
-- [ ] Self-healing test (manual instance termination)
-- [ ] Drift test (manual security group change caught by `terraform plan`)
-- [ ] Scale-out test (CPU burn endpoint, CloudWatch alarm, ASG activity)
+- [x] Verified load-balancing behavior (hostname alternation, direct-access block)
+- [x] Self-healing test (manual instance termination)
+- [x] Drift test (manual security group change caught by `terraform plan`)
+- [x] Scale-out test (CPU burn endpoint, CloudWatch alarm, ASG activity)
 - [ ] Kubernetes-side HPA exercise (comparison to this phase's scaling policy)
